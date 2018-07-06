@@ -1,0 +1,31 @@
+#!/bin/bash
+# @geek182
+# Generate date
+spoch_time=$(date +%s%3N)
+GroupName="PerformanceResourcesLogGroupDEV"
+StreamName="PerformanceResourcesStreamDEV"
+LogFileName="events-performance"
+#get next token to send log
+next_token=$(aws logs describe-log-streams --log-group-name $GroupName | grep uploadSequenceToken | awk '{print $2}' | sed 's/"//g' | sed 's/,//g')
+
+#need validation because if it is the first time dont need send the token.
+if [ -z "$next_token" ]
+then
+        echo "empty"
+	sed -i "s/value/$spoch_time/g" $LogFileName
+
+	aws logs put-log-events --log-group-name $GroupName --log-stream-name $StreamName --log-events file://$LogFileName
+
+	sed -i "s/$spoch_time/value/g" $LogFileName
+
+else
+        echo "not empty"
+	sed -i "s/value/$spoch_time/g" $LogFileName
+
+	aws logs put-log-events --log-group-name $GroupName --log-stream-name $StreamName --log-events file://$LogFileName  --sequence-token $next_token
+
+sed -i "s/$spoch_time/value/g" $LogFileName
+
+fi
+
+
